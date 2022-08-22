@@ -222,8 +222,7 @@ jobs:
       - task: PostAnalysis@2
         displayName: 'Guardian Break'
         inputs:
-          GdnBreakGdnToolSDLNativeRulesSeverity: Warning
-          GdnBreakGdnToolSDLNativeRules: true
+          GdnBreakPolicyMinSev: Warning
 
 
   - ${{ if eq(parameters.RunOnnxRuntimeTests, true) }}:
