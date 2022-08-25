@@ -98,6 +98,12 @@ struct Fused_multihead_attention_params_v2
     }
 };
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+extern unsigned char fused_multihead_attention_v2_fp16_64_64_kernel_sm70_cubin[];
+extern unsigned char fused_multihead_attention_v2_fp16_96_64_kernel_sm70_cubin[];
+extern unsigned char fused_multihead_attention_v2_fp16_128_64_kernel_sm70_cubin[];
+extern unsigned char fused_multihead_attention_v2_fp16_256_64_kernel_sm70_cubin[];
+extern unsigned char fused_multihead_attention_v2_fp16_384_64_kernel_sm70_cubin[];
+
 extern unsigned char fused_multihead_attention_v2_fp16_128_64_kernel_sm75_cubin[];
 extern unsigned char fused_multihead_attention_v2_fp16_128_64_kernel_sm80_cubin[];
 extern unsigned char fused_multihead_attention_v2_fp16_128_64_kernel_sm86_cubin[];
@@ -113,6 +119,7 @@ extern unsigned char fused_multihead_attention_v2_fp16_64_64_kernel_sm86_cubin[]
 extern unsigned char fused_multihead_attention_v2_fp16_96_64_kernel_sm75_cubin[];
 extern unsigned char fused_multihead_attention_v2_fp16_96_64_kernel_sm80_cubin[];
 extern unsigned char fused_multihead_attention_v2_fp16_96_64_kernel_sm86_cubin[];
+
 extern unsigned char fused_multihead_attention_v2_int8_128_64_kernel_cubin[];
 extern unsigned char fused_multihead_attention_v2_int8_128_64_kernel_sm75_cubin[];
 extern unsigned char fused_multihead_attention_v2_int8_128_64_kernel_sm80_cubin[];
@@ -166,6 +173,12 @@ extern unsigned char cubin_fmha_v2_fp16_128_64_sm87_cu_cubin[];
 extern unsigned char cubin_fmha_v2_fp16_96_64_sm87_cu_cubin[];
 extern unsigned char cubin_fmha_v2_fp16_64_64_sm87_cu_cubin[];
 
+extern uint32_t fused_multihead_attention_v2_fp16_64_64_kernel_sm70_cubin_len;
+extern uint32_t fused_multihead_attention_v2_fp16_96_64_kernel_sm70_cubin_len;
+extern uint32_t fused_multihead_attention_v2_fp16_128_64_kernel_sm70_cubin_len;
+extern uint32_t fused_multihead_attention_v2_fp16_256_64_kernel_sm70_cubin_len;
+extern uint32_t fused_multihead_attention_v2_fp16_384_64_kernel_sm70_cubin_len;
+
 extern uint32_t fused_multihead_attention_v2_fp16_128_64_kernel_sm75_cubin_len;
 extern uint32_t fused_multihead_attention_v2_fp16_128_64_kernel_sm80_cubin_len;
 extern uint32_t fused_multihead_attention_v2_fp16_128_64_kernel_sm86_cubin_len;
@@ -181,6 +194,7 @@ extern uint32_t fused_multihead_attention_v2_fp16_64_64_kernel_sm86_cubin_len;
 extern uint32_t fused_multihead_attention_v2_fp16_96_64_kernel_sm75_cubin_len;
 extern uint32_t fused_multihead_attention_v2_fp16_96_64_kernel_sm80_cubin_len;
 extern uint32_t fused_multihead_attention_v2_fp16_96_64_kernel_sm86_cubin_len;
+
 extern uint32_t fused_multihead_attention_v2_int8_128_64_kernel_cubin_len;
 extern uint32_t fused_multihead_attention_v2_int8_128_64_kernel_sm75_cubin_len;
 extern uint32_t fused_multihead_attention_v2_int8_128_64_kernel_sm80_cubin_len;
@@ -248,6 +262,38 @@ static const struct FusedMultiHeadAttentionKernelMetaInfoV2
     uint32_t mUnrollStep;
     bool mInterleaved;
 } sMhaKernelMetaInfosV2[] = {
+    //Volta
+    {DATA_TYPE_FP16, 64, 64, kSM_70, fused_multihead_attention_v2_fp16_64_64_kernel_sm70_cubin,
+        fused_multihead_attention_v2_fp16_64_64_kernel_sm70_cubin_len,
+        "fused_multihead_attention_v2_fp16_64_64_kernel_sm70", 32768, 128, 0, false},
+    {DATA_TYPE_FP16, 64, 64, kSM_70, fused_multihead_attention_v2_fp16_64_64_kernel_sm70_cubin,
+        fused_multihead_attention_v2_fp16_64_64_kernel_sm70_cubin_len,
+        "fused_multihead_attention_v2_fp16_64_64_kernel_sm70_noloop", 36864, 128, 32, false},
+    {DATA_TYPE_FP16, 96, 64, kSM_70, fused_multihead_attention_v2_fp16_96_64_kernel_sm70_cubin,
+        fused_multihead_attention_v2_fp16_96_64_kernel_sm70_cubin_len,
+        "fused_multihead_attention_v2_fp16_96_64_kernel_sm70", 32768, 128, 0, false},
+    {DATA_TYPE_FP16, 96, 64, kSM_70, fused_multihead_attention_v2_fp16_96_64_kernel_sm70_cubin,
+        fused_multihead_attention_v2_fp16_96_64_kernel_sm70_cubin_len,
+        "fused_multihead_attention_v2_fp16_96_64_kernel_sm70_noloop", 36864, 128, 32, false},
+    {DATA_TYPE_FP16, 128, 64, kSM_70, fused_multihead_attention_v2_fp16_128_64_kernel_sm70_cubin,
+        fused_multihead_attention_v2_fp16_128_64_kernel_sm70_cubin_len,
+        "fused_multihead_attention_v2_fp16_128_64_kernel_sm70", 36864, 128, 0, false},
+    {DATA_TYPE_FP16, 128, 64, kSM_70, fused_multihead_attention_v2_fp16_128_64_kernel_sm70_cubin,
+        fused_multihead_attention_v2_fp16_128_64_kernel_sm70_cubin_len,
+        "fused_multihead_attention_v2_fp16_128_64_kernel_sm70_noloop", 36864, 128, 32, false},
+    {DATA_TYPE_FP16, 256, 64, kSM_70, fused_multihead_attention_v2_fp16_256_64_kernel_sm70_cubin,
+        fused_multihead_attention_v2_fp16_256_64_kernel_sm70_cubin_len,
+        "fused_multihead_attention_v2_fp16_256_64_kernel_sm70", 69632, 256, 0, false},
+    {DATA_TYPE_FP16, 256, 64, kSM_70, fused_multihead_attention_v2_fp16_256_64_kernel_sm70_cubin,
+        fused_multihead_attention_v2_fp16_256_64_kernel_sm70_cubin_len,
+        "fused_multihead_attention_v2_fp16_256_64_kernel_sm70_noloop", 69632, 256, 32, false},
+    {DATA_TYPE_FP16, 384, 64, kSM_70, fused_multihead_attention_v2_fp16_384_64_kernel_sm70_cubin,
+        fused_multihead_attention_v2_fp16_384_64_kernel_sm70_cubin_len,
+        "fused_multihead_attention_v2_fp16_384_64_kernel_sm70", 69632, 256, 0, false},
+    {DATA_TYPE_FP16, 384, 64, kSM_70, fused_multihead_attention_v2_fp16_384_64_kernel_sm70_cubin,
+        fused_multihead_attention_v2_fp16_384_64_kernel_sm70_cubin_len,
+        "fused_multihead_attention_v2_fp16_384_64_kernel_sm70_noloop", 69632, 256, 32, false},
+
     // Xavier
     {DATA_TYPE_INT8, 128, 64, kSM_72, fused_multihead_attention_v2_int8_128_64_kernel_cubin,
         fused_multihead_attention_v2_int8_128_64_kernel_cubin_len,
@@ -746,7 +792,7 @@ public:
         std::stringstream configss;
         configss << "s: " << params.s << " d: " << params.d << " interleaved?: "
                  << params.interleaved << " forceUnroll?: " << forceUnroll;
-        ORT_ENFORCE(findIter != mFunctions.end() && configss.str().c_str());
+        ORT_ENFORCE(findIter != mFunctions.end(), configss.str().c_str());
 
         const auto& kernelMeta = mKernelMeta[findIter->second.mMetaInfoIndex];
         const CUfunction func = findIter->second.mDeviceFunction;

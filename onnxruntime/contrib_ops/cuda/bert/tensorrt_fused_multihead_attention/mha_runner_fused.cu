@@ -59,7 +59,7 @@ public:
         , sm(interface->mSm)
         , xmmaKernel(getXMMAKernelsV2(DATA_TYPE_FP16, sm))
     {
-      ORT_ENFORCE((sm == kSM_72 || sm == kSM_75 || sm == kSM_80 || sm == kSM_86 || sm == kSM_87),
+      ORT_ENFORCE((sm == kSM_70 || sm == kSM_72 || sm == kSM_75 || sm == kSM_80 || sm == kSM_86 || sm == kSM_87),
                   "Unsupported architecture");
       params.clear();
     }
@@ -82,25 +82,49 @@ public:
         size_t warps_m{};
         size_t warps_n{};
         size_t warps_k = 1;
-        if (S == 64 || S == 96 || S == 128)
+        if (sm == 70)
         {
-            warps_m = 2;
-            warps_n = 2;
+            if (S == 64 || S == 96)
+            {
+                warps_m = 2;
+                warps_n = 2;
+            }
+            else if (S == 128)
+            {
+                warps_m = 1;
+                warps_n = 4;
+            }
+            else if (S == 256 || S == 384)
+            {
+                warps_m = 1;
+                warps_n = 8;
+            }
+            else
+            {
+                ORT_ENFORCE(false, "Unsupporte sequence length");
+            }
         }
-        else if (S == 256 || S == 192)
-        {
-            warps_m = 1;
-            warps_n = 4;
-        }
-        else if (S == 384 || S == 512)
-        {
-            warps_m = 1;
-            warps_n = 8;
-        }
-
         else
         {
-            ORT_ENFORCE(false, "Unsupporte sequence length");
+            if (S == 64 || S == 96 || S == 128)
+            {
+                warps_m = 2;
+                warps_n = 2;
+            }
+            else if (S == 256 || S == 192)
+            {
+                warps_m = 1;
+                warps_n = 4;
+            }
+            else if (S == 384 || S == 512)
+            {
+                warps_m = 1;
+                warps_n = 8;
+            }
+            else
+            {
+                ORT_ENFORCE(false, "Unsupporte sequence length");
+            }
         }
         // The number of threads per CTA.
         threads_per_cta = warps_m * warps_n * warps_k * 32;
@@ -134,7 +158,6 @@ public:
     void run(const void* qkvPtr,
              const void* maskPtr, const void* cuSeqlenPtr, void* output, void* workspace, cudaStream_t stream)
     {
-
         params.qkv_ptr = const_cast<void*>(qkvPtr);
 
         // dummy input in V2/V3 because now we use cu_seqlens
