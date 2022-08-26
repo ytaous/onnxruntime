@@ -36,6 +36,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cuda.h>
+#include "core/providers/cuda/cuda_common.h"
 
 namespace onnxruntime {
 namespace contrib {
@@ -44,11 +45,11 @@ namespace cuda {
 CUDADriverWrapper::CUDADriverWrapper()
 {
     handle = dllOpen(CUDA_LIB_NAME);
-    PLUGIN_ASSERT(handle != nullptr);
+    ORT_ENFORCE(handle != nullptr);
 
     auto load_sym = [](void* handle, const char* name) {
         void* ret = dllGetSym(handle, name);
-        PLUGIN_ASSERT(ret != nullptr);
+        ORT_ENFORCE(ret != nullptr);
         return ret;
     };
 
