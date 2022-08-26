@@ -737,10 +737,6 @@ void UnfusedMHARunnerFp16::run(const void* qkvPtr, const void* maskPtr, void* ou
                                                  mStrideOut, mNumMats, CUDA_R_16F, static_cast<cublasGemmAlgo_t>(mAlgoBatchedEx2)));
 }
 
-void UnfusedMHARunnerFp16::setScaleList(const float scaleQkv, const float scaleCtx, const float dqProbs)
-{
-}
-
 bool UnfusedMHARunnerFp16::isValid(int s) const
 {
     return true;
@@ -803,10 +799,6 @@ void UnfusedMHARunnerFp32::run(const void* qkvPtr, const void* maskPtr, void* ou
 
     CUBLAS_CALL_THROW(cublasGemmStridedBatched<float>(mCublas, CUBLAS_OP_N, CUBLAS_OP_N, mHeadSize, mS, mS, 1.f,
         vptr, mLdQKV, mStrideQKV, pptr, mS, mOmatSize, 0.f, outptr, mLdOut, mStrideOut, mNumMats));
-}
-
-void UnfusedMHARunnerFp32::setScaleList(const float scaleQkv, const float scaleCtx, const float dqProbs)
-{
 }
 
 bool UnfusedMHARunnerFp32::isValid(int s) const

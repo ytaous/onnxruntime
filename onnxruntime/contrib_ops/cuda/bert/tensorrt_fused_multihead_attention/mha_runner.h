@@ -67,7 +67,11 @@ public:
         mNumMats = B * mNumHeads;
     }
 
-    virtual void setScaleList(const float scaleQkv, const float scaleCtx, const float dqProbs) = 0;
+    virtual void setScaleList(const float scaleQkv, const float scaleCtx, const float dqProbs) {
+        ORT_UNUSED_PARAMETER(scaleQkv);
+        ORT_UNUSED_PARAMETER(scaleCtx);
+        ORT_UNUSED_PARAMETER(dqProbs);
+    }
 
     virtual void run(const void* qkvPtr, const void* maskPtr, void* output, void* workspace, cudaStream_t stream) = 0;
 
@@ -109,8 +113,6 @@ public:
 
     virtual void setup(const int32_t S, const int32_t B) override;
 
-    virtual void setScaleList(const float scaleQkv, const float scaleCtx, const float dqProbs) override;
-
     void run(const void* qkvPtr, const void* maskPtr, void* output, void* workspace, cudaStream_t stream) override;
 
     size_t getWorkspaceSize() const override;
@@ -123,6 +125,7 @@ private:
     std::unique_ptr<mhaImpl> pimpl;
 };
 
+#if USE_INT8_ATTENTION
 class FusedMHARunnerInt8v2 : public MHARunner
 {
 public:
@@ -147,7 +150,7 @@ private:
     class mhaImpl;
     std::unique_ptr<mhaImpl> pimpl;
 };
-
+#endif
 
 class UnfusedMHARunnerFp16 : public MHARunner
 {
@@ -156,8 +159,6 @@ public:
     virtual ~UnfusedMHARunnerFp16();
 
     virtual void setup(const int32_t S, const int32_t B) override;
-
-    virtual void setScaleList(const float scaleQkv, const float scaleCtx, const float dqProbs) override;
 
     void run(const void* qkvPtr, const void* maskPtr, void* output, void* workspace, cudaStream_t stream) override;
 
@@ -180,8 +181,6 @@ public:
     virtual ~UnfusedMHARunnerFp32();
 
     virtual void setup(const int32_t S, const int32_t B) override;
-
-    virtual void setScaleList(const float scaleQkv, const float scaleCtx, const float dqProbs) override;
 
     void run(const void* qkvPtr, const void* maskPtr, void* output, void* workspace, cudaStream_t stream) override;
 

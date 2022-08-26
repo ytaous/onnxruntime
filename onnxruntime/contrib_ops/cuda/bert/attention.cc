@@ -1,10 +1,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include "core/platform/env_var_utils.h"
 #include "contrib_ops/cuda/bert/attention.h"
 #include "contrib_ops/cuda/bert/attention_impl.h"
 #include "core/providers/cuda/cuda_common.h"
 #include "core/providers/cuda/shared_inc/fpgeneric.h"
+#include "contrib_ops/cuda/bert/tensorrt_fused_multihead_attention/mha_runner.h"
 
 using namespace onnxruntime::cuda;
 using namespace ::onnxruntime::common;
@@ -28,8 +30,35 @@ namespace cuda {
 REGISTER_KERNEL_TYPED(float)
 REGISTER_KERNEL_TYPED(MLFloat16)
 
+static inline bool HasFusedFp16Kernel(int sm, int head_size, int sequence_length) {
+  if (!(sm == kSM_70 || sm == kSM_75 || sm == kSM_80 || sm == kSM_86)) {
+    return false;
+  }
+
+  if (head_size == 32) {
+    return (sm == kSM_75 || sm == kSM_80) &&
+           (sequence_length == 128 || sequence_length == 256 || sequence_length == 512);
+  }
+
+  if (head_size != 64) {
+    return false;
+  }
+
+  if (!(sequence_length == 64 || sequence_length == 128 || sequence_length == 192 ||
+        sequence_length == 256 || sequence_length == 384 || sequence_length == 512)) {
+    return false;
+  }
+
+  if (sm == kSM_70 || sm == kSM_86) {
+    return sequence_length != 512;
+  }
+
+  return true;
+}
+
 template <typename T>
-Attention<T>::Attention(const OpKernelInfo& info) : CudaKernel(info), AttentionBase(info) {}
+Attention<T>::Attention(const OpKernelInfo& info) : CudaKernel(info), AttentionBase(info) {
+}
 
 template <typename T>
 Status Attention<T>::ComputeInternal(OpKernelContext* context) const {
@@ -70,6 +99,24 @@ Status Attention<T>::ComputeInternal(OpKernelContext* context) const {
   int past_sequence_length = 0;
   Tensor* present = GetPresent(context, past, batch_size, head_size, sequence_length, past_sequence_length);
 
+  // Check whether we can use fused kernel
+  int sm = device_prop.major * 10 + device_prop.minor;
+  bool use_mha_runner = (sizeof(T) == 2 &&
+                         nullptr != mask_index && mask_index->Shape().NumDimensions() == 1 &&
+                         nullptr == past &&
+                         nullptr == present &&
+                         nullptr == extra_add_qk &&
+                         !is_unidirectional_ &&
+                        HasFusedFp16Kernel(sm, head_size, sequence_length));
+
+  MHARunner* mha_runner = nullptr;
+  if (use_mha_runner){
+    if (nullptr == dispatcher_fp16_.get()) {
+      dispatcher_fp16_.reset(new FusedMHARunnerFP16v2(num_heads_, head_size, sm));
+    }
+    mha_runner = dispatcher_fp16_.get();
+  }
+
   cublasHandle_t cublas = CublasHandle();
   constexpr size_t element_size = sizeof(T);
 
@@ -95,7 +142,8 @@ Status Attention<T>::ComputeInternal(OpKernelContext* context) const {
                                                    num_heads_,
                                                    head_size,
                                                    sequence_length,
-                                                   past_sequence_length);
+                                                   past_sequence_length,
+                                                   mha_runner);
 
   auto work_space = GetScratchBuffer<void>(workSpaceSize);
   if (!LaunchAttentionKernel(
@@ -117,7 +165,8 @@ Status Attention<T>::ComputeInternal(OpKernelContext* context) const {
           nullptr == extra_add_qk ? nullptr : extra_add_qk->Data<T>(),
           work_space.get(),
           output->MutableData<T>(),
-          nullptr == present ? nullptr : present->MutableData<T>())) {
+          nullptr == present ? nullptr : present->MutableData<T>(),
+          mha_runner)) {
     // Get last error to reset it to cudaSuccess.
     CUDA_CALL(cudaGetLastError());
     return Status(common::ONNXRUNTIME, common::FAIL);

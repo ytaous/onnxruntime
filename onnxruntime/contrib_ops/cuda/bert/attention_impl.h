@@ -23,7 +23,8 @@ size_t GetAttentionWorkspaceSize(
     size_t num_heads,
     size_t head_size,
     size_t sequence_length,
-    size_t past_sequence_length);
+    size_t past_sequence_length,
+    void* mha_runner);
 
 bool LaunchAttentionKernel(
     const cudaDeviceProp& prop,                // Device Properties
@@ -44,7 +45,8 @@ bool LaunchAttentionKernel(
     const void* extra_add_qk,                  // Additional Add
     void* workspace,                           // Temporary buffer
     void* output,                              // Output tensor
-    void* present                              // Present state output
+    void* present,                             // Present state output
+    void* fused_mha_runner                     // Fused multi-head attention
 );
 
 bool LaunchDecoderAttentionKernel(

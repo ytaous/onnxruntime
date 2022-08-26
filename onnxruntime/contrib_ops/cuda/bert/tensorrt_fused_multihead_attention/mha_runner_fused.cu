@@ -25,30 +25,19 @@
 #include "mha_runner.h"
 #include "fused_multihead_attention_v2.h"
 
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wstrict-aliasing" // for set_alpha
+#endif
+
 namespace onnxruntime {
 namespace contrib {
 namespace cuda {
 
 static inline void set_alpha(uint32_t& alpha, float norm, Data_type dtype)
 {
-    if (dtype == DATA_TYPE_FP16)
-    {
-        half2 h2 = __float2half2_rn(norm);
-        alpha = reinterpret_cast<const uint32_t&>(h2);
-    }
-    else if (dtype == DATA_TYPE_FP32)
-    {
-        alpha = reinterpret_cast<const uint32_t&>(norm);
-    }
-    else if (dtype == DATA_TYPE_INT32)
-    {
-        int32_t inorm = static_cast<int32_t>(norm);
-        alpha = reinterpret_cast<const uint32_t&>(inorm);
-    }
-    else
-    {
-        ORT_ENFORCE(false);
-    }
+  ORT_ENFORCE(dtype == DATA_TYPE_FP16);
+  half2 h2 = __float2half2_rn(norm);
+  alpha = reinterpret_cast<const uint32_t&>(h2);
 }
 
 class FusedMHARunnerFP16v2::mhaImpl
@@ -66,14 +55,14 @@ public:
 
     ~mhaImpl() {}
 
-    size_t getPackedMaskSizeInBytes() const
-    {
-        // check that we initialized
-        ORT_ENFORCE(xmmas_m > 0);
-        ORT_ENFORCE(threads_per_cta > 0);
-        ORT_ENFORCE(interface->mB > 0);
-        return interface->mB * xmmas_m * threads_per_cta * sizeof(uint32_t);
-    }
+    // size_t getPackedMaskSizeInBytes() const
+    // {
+    //     // check that we initialized
+    //     ORT_ENFORCE(xmmas_m > 0);
+    //     ORT_ENFORCE(threads_per_cta > 0);
+    //     ORT_ENFORCE(interface->mB > 0);
+    //     return interface->mB * xmmas_m * threads_per_cta * sizeof(uint32_t);
+    // }
 
     void setup(const int S, const int B)
     {
@@ -155,8 +144,7 @@ public:
         params.o_stride_in_bytes = interface->mNumHeads * interface->mHeadSize * sizeof(half);
     }
 
-    void run(const void* qkvPtr,
-             const void* maskPtr, const void* cuSeqlenPtr, void* output, void* workspace, cudaStream_t stream)
+    void run(const void* qkvPtr, const void* maskPtr, void* output, void* workspace, cudaStream_t stream)
     {
         params.qkv_ptr = const_cast<void*>(qkvPtr);
 
@@ -165,7 +153,7 @@ public:
 
         params.o_ptr = output;
 
-        params.cu_seqlens = static_cast<int*>(const_cast<void*>(cuSeqlenPtr));
+        params.cu_seqlens = static_cast<int*>(const_cast<void*>(maskPtr));
         xmmaKernel->run(params, stream);
         CUDA_CALL_THROW(cudaPeekAtLastError());
     }
@@ -203,17 +191,17 @@ size_t FusedMHARunnerFP16v2::getWorkspaceSize() const
     return 0;
 }
 
-void FusedMHARunnerFP16v2::setScaleList(const float scaleQkv, const float scaleCtx, const float dqProbs)
-{
-}
-
 bool FusedMHARunnerFP16v2::isValid(int s) const
 {
     return pimpl->isValid(s);
 }
 
-// Int8 starts here: TODO refactor the duplicate stuff
+void FusedMHARunnerFP16v2::run(const void* qkvPtr, const void* maskPtr, void* output, void* workspace, cudaStream_t stream){
+    return pimpl->run(qkvPtr, maskPtr, output, workspace, stream);
+}
 
+// Int8 starts here: TODO refactor the duplicate stuff
+#if USE_INT8_ATTENTION
 class FusedMHARunnerInt8v2::mhaImpl
 {
 
@@ -231,13 +219,13 @@ public:
 
     ~mhaImpl() {}
 
-    size_t getPackedMaskSizeInBytes() const
-    {
-        ORT_ENFORCE(xmmas_m > 0);
-        ORT_ENFORCE(threads_per_cta > 0);
-        ORT_ENFORCE(interface->mB > 0);
-        return interface->mB * xmmas_m * threads_per_cta * sizeof(uint32_t);
-    }
+    // size_t getPackedMaskSizeInBytes() const
+    // {
+    //     ORT_ENFORCE(xmmas_m > 0);
+    //     ORT_ENFORCE(threads_per_cta > 0);
+    //     ORT_ENFORCE(interface->mB > 0);
+    //     return interface->mB * xmmas_m * threads_per_cta * sizeof(uint32_t);
+    // }
 
     void setup(const int S, const int B)
     {
@@ -281,8 +269,7 @@ public:
         params.o_stride_in_bytes = interface->mNumHeads * interface->mHeadSize * sizeof(int8_t);
     }
 
-    void run(const void* qkvPtr,
-        const void* maskPtr, const void* cuSeqlenPtr, void* output, void* workspace, cudaStream_t stream)
+    void run(const void* qkvPtr, const void* maskPtr, void* output, void* /*workspace*/, cudaStream_t stream)
     {
         float scaleQkv = interface->mScaleQkv;
         float scaleCtx = interface->mScaleCtx;
@@ -308,7 +295,7 @@ public:
 
         params.o_ptr = output;
 
-        params.cu_seqlens = static_cast<int*>(const_cast<void*>(cuSeqlenPtr));
+        params.cu_seqlens = static_cast<int*>(const_cast<void*>(maskPtr));
 
         xmmaKernel->run(params, stream);
         CUDA_CALL_THROW(cudaPeekAtLastError());
@@ -359,6 +346,11 @@ bool FusedMHARunnerInt8v2::isValid(int s) const
 {
     return pimpl->isValid(s);
 }
+
+void FusedMHARunnerInt8v2::run(const void* qkvPtr, const void* maskPtr, void* output, void* workspace, cudaStream_t stream){
+    return pimpl->run(qkvPtr, maskPtr, output, workspace, stream);
+}
+#endif
 
 }  // namespace cuda
 }  // namespace contrib
