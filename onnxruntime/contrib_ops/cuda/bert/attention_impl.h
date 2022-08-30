@@ -75,6 +75,7 @@ bool LaunchDecoderAttentionKernel(
     void* new_value_cache             // New_value_cache tensor
 );
 
+// BxNxSxH => BxSxNxH or SxBxNxH (reversed_bs is true)
 bool LaunchTransCtx(cudaStream_t stream,
                     const int sequence_length, const int batch_size, const int head_size, const int num_heads,
                     const int max_threads_per_block, const bool reversed_bs, const float* input, float* output);
@@ -83,6 +84,7 @@ bool LaunchTransCtx(cudaStream_t stream,
                     const int sequence_length, const int batch_size, const int head_size, const int num_heads,
                     const int max_threads_per_block, const bool reversed_bs, const half* input, half* output);
 
+// BxSxMxNxH or SxBxMxNxH (reversed_bs is true) => MxBxNxSxH
 bool LaunchTransQkv(cudaStream_t stream, const int matrix_num,
                     const int sequence_length, const int batch_size, const int head_size, const int num_heads,
                     const int max_threads_per_block, const bool reversed_bs, const float* input, float* output);
@@ -90,6 +92,15 @@ bool LaunchTransQkv(cudaStream_t stream, const int matrix_num,
 bool LaunchTransQkv(cudaStream_t stream, const int matrix_num,
                     const int sequence_length, const int batch_size, const int head_size, const int num_heads,
                     const int max_threads_per_block, const bool reversed_bs, const half* input, half* output);
+
+// SxBxNxH => BxSxNxH
+bool LaunchTransTrt(cudaStream_t stream,
+                    const int sequence_length, const int batch_size, const int head_size, const int num_heads,
+                    const int max_threads_per_block,  const float* input, float* output);
+
+bool LaunchTransTrt(cudaStream_t stream,
+                    const int sequence_length, const int batch_size, const int head_size, const int num_heads,
+                    const int max_threads_per_block, const half* input, half* output);
 
 bool LaunchConcatTensorToTensor(cudaStream_t stream,
                                 const int all_sequence_length,
@@ -137,6 +148,16 @@ bool LaunchConcatPastToPresent(cudaStream_t stream,
                                const half* k_v,
                                half* present);
 
+void LaunchTrtPaddingOffset(int* trt_mha_padding_offset,
+                            const int* sequence_length,
+                            const int batch_size,
+                            cudaStream_t stream);
+
+void LaunchTrtPaddingOffset(int* trt_mha_padding_offset,
+                            const int* sequence_length,
+                            const int request_batch_size,
+                            const int request_sequence_length,
+                            cudaStream_t stream);
 }  // namespace cuda
 }  // namespace contrib
 }  // namespace onnxruntime

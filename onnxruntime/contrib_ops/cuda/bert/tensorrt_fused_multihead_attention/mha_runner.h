@@ -24,177 +24,174 @@
 //#include "zeroPadding2d.h"
 #include "fused_multihead_attention_common.h"
 
-
 namespace onnxruntime {
 namespace contrib {
 namespace cuda {
 
 // Multi Head Attention runner
-class MHARunner
-{
-public:
-    MHARunner(const int32_t numHeads, const int32_t headSize, const int wordSize)
-        : mS(0)
-        , mB(0)
-        , mOmatSize(0)
-        , mNumMats(0)
-        , mNumHeads(numHeads)
-        , mHeadSize(headSize)
-        , mWordSize(wordSize)
-        , mLdQKV(0)
-        , mStrideQKV(0)
-        , mLdOut(0)
-        , mStrideOut(0)
-        , mRsqrtHeadSize(1.F / sqrtf(headSize))
-    {
-    }
+class MHARunner {
+ public:
+  MHARunner(const int32_t numHeads, const int32_t headSize, const int wordSize)
+      : mS(0),
+        mB(0),
+        mOmatSize(0),
+        mNumMats(0),
+        mNumHeads(numHeads),
+        mHeadSize(headSize),
+        mWordSize(wordSize),
+        mLdQKV(0),
+        mStrideQKV(0),
+        mLdOut(0),
+        mStrideOut(0),
+        mRsqrtHeadSize(1.F / sqrtf(headSize)) {
+  }
 
-    virtual ~MHARunner() = default;
+  virtual ~MHARunner() = default;
 
-    virtual void setup(const int32_t S, const int32_t B)
-    {
-        ORT_ENFORCE(S > 0);
-        ORT_ENFORCE(B > 0);
-        mB = B;
-        mS = S;
+  virtual void setup(const int32_t S, const int32_t B) {
+    ORT_ENFORCE(S > 0);
+    ORT_ENFORCE(B > 0);
+    mB = B;
+    mS = S;
 
-        mLdQKV = 3 * B * mNumHeads * mHeadSize;
-        mStrideQKV = 3 * mHeadSize;
+    mLdQKV = 3 * B * mNumHeads * mHeadSize;
+    mStrideQKV = 3 * mHeadSize;
 
-        mLdOut = B * mNumHeads * mHeadSize;
-        mStrideOut = mHeadSize;
-        mOmatSize = S * S;
-        mNumMats = B * mNumHeads;
-    }
+    mLdOut = B * mNumHeads * mHeadSize;
+    mStrideOut = mHeadSize;
+    mOmatSize = S * S;
+    mNumMats = B * mNumHeads;
+  }
 
-    virtual void setScaleList(const float scaleQkv, const float scaleCtx, const float dqProbs) {
-        ORT_UNUSED_PARAMETER(scaleQkv);
-        ORT_UNUSED_PARAMETER(scaleCtx);
-        ORT_UNUSED_PARAMETER(dqProbs);
-    }
+  virtual void setScaleList(const float scaleQkv, const float scaleCtx, const float dqProbs) {
+    ORT_UNUSED_PARAMETER(scaleQkv);
+    ORT_UNUSED_PARAMETER(scaleCtx);
+    ORT_UNUSED_PARAMETER(dqProbs);
+  }
 
-    virtual void run(const void* qkvPtr, const void* maskPtr, void* output, void* workspace, cudaStream_t stream) = 0;
+  virtual void run(const void* qkvPtr, const void* maskPtr, const void* seqLens,
+                   void* output, void* workspace, cudaStream_t stream) = 0;
 
-    virtual size_t getWorkspaceSize() const = 0;
+  virtual size_t getWorkspaceSize() const = 0;
 
-    virtual bool isValid(int32_t s) const = 0;
+  virtual bool isValid(int32_t s) const = 0;
 
-protected:
-    int32_t mS;
-    int32_t mB;
-    int32_t mOmatSize;
-    int32_t mNumMats;
-    int32_t mNumHeads;
-    int32_t mHeadSize;
-    int32_t mWordSize;
-    int32_t mLdQKV;
-    int32_t mStrideQKV;
-    int32_t mLdOut;
-    int32_t mStrideOut;
+ protected:
+  int32_t mS;
+  int32_t mB;
+  int32_t mOmatSize;
+  int32_t mNumMats;
+  int32_t mNumHeads;
+  int32_t mHeadSize;
+  int32_t mWordSize;
+  int32_t mLdQKV;
+  int32_t mStrideQKV;
+  int32_t mLdOut;
+  int32_t mStrideOut;
 
-    float mRsqrtHeadSize;
+  float mRsqrtHeadSize;
 };
 
 std::pair<int, int> tuneBatchedGemm(const int32_t B, const int32_t S, const int32_t numHeads, const int32_t headSize);
 
 template <typename T>
 int32_t computeScaledSoftmax(cudaStream_t stream, const int32_t ld, const int32_t B, const int32_t N,
-    const float rsqrtHeadSize, const T* input, T* output);
+                             const float rsqrtHeadSize, const T* input, T* output);
 
 template <typename T>
 int32_t computeMaskedScaledSoftmax(cudaStream_t stream, const int32_t ld, const int32_t B, const int32_t N,
-    const float rsqrtHeadSize, const int* maskIdx, const T* input, T* output);
+                                   const float rsqrtHeadSize, const int* maskIdx, const T* input, T* output);
 
-class FusedMHARunnerFP16v2 : public MHARunner
-{
-public:
-    FusedMHARunnerFP16v2(const int32_t numHeads, const int32_t headSize, const int32_t sm);
-    ~FusedMHARunnerFP16v2() = default; // for pimpl
+class FusedMHARunnerFP16v2 : public MHARunner {
+ public:
+  FusedMHARunnerFP16v2(const int32_t numHeads, const int32_t headSize, const int32_t sm);
+  ~FusedMHARunnerFP16v2() = default;  // for pimpl
 
-    virtual void setup(const int32_t S, const int32_t B) override;
+  virtual void setup(const int32_t S, const int32_t B) override;
 
-    void run(const void* qkvPtr, const void* maskPtr, void* output, void* workspace, cudaStream_t stream) override;
+  void run(const void* qkvPtr, const void* maskPtr, const void* seqLens,
+           void* output, void* workspace, cudaStream_t stream) override;
 
-    size_t getWorkspaceSize() const override;
+  size_t getWorkspaceSize() const override;
 
-    bool isValid(int32_t s) const override;
+  bool isValid(int32_t s) const override;
 
-private:
-    int32_t mSm;
-    class mhaImpl;
-    std::unique_ptr<mhaImpl> pimpl;
+ private:
+  int32_t mSm;
+  class mhaImpl;
+  std::unique_ptr<mhaImpl> pimpl;
 };
 
 #if USE_INT8_ATTENTION
-class FusedMHARunnerInt8v2 : public MHARunner
-{
-public:
-    FusedMHARunnerInt8v2(const int32_t numHeads, const int32_t headSize, const int32_t sm);
-    ~FusedMHARunnerInt8v2() = default; // for pimpl
+class FusedMHARunnerInt8v2 : public MHARunner {
+ public:
+  FusedMHARunnerInt8v2(const int32_t numHeads, const int32_t headSize, const int32_t sm);
+  ~FusedMHARunnerInt8v2() = default;  // for pimpl
 
-    virtual void setup(const int32_t S, const int32_t B) override;
+  virtual void setup(const int32_t S, const int32_t B) override;
 
-    virtual void setScaleList(const float scaleQkv, const float scaleCtx, const float dqProbs) override;
+  virtual void setScaleList(const float scaleQkv, const float scaleCtx, const float dqProbs) override;
 
-    void run(const void* qkvPtr, const void* maskPtr, void* output, void* workspace, cudaStream_t stream) override;
+  void run(const void* qkvPtr, const void* maskPtr, const void* seqLens,
+           void* output, void* workspace, cudaStream_t stream) override;
 
-    size_t getWorkspaceSize() const override;
+  size_t getWorkspaceSize() const override;
 
-    bool isValid(int32_t s) const override;
+  bool isValid(int32_t s) const override;
 
-private:
-    float mDqProbs;
-    float mScaleQkv;
-    float mScaleCtx;
-    int32_t mSm;
-    class mhaImpl;
-    std::unique_ptr<mhaImpl> pimpl;
+ private:
+  float mDqProbs;
+  float mScaleQkv;
+  float mScaleCtx;
+  int32_t mSm;
+  class mhaImpl;
+  std::unique_ptr<mhaImpl> pimpl;
 };
 #endif
 
-class UnfusedMHARunnerFp16 : public MHARunner
-{
-public:
-    UnfusedMHARunnerFp16(const int32_t numHeads, const int32_t headSize, const int32_t smVersion);
-    virtual ~UnfusedMHARunnerFp16();
+// class UnfusedMHARunnerFp16 : public MHARunner {
+//  public:
+//   UnfusedMHARunnerFp16(const int32_t numHeads, const int32_t headSize, const int32_t smVersion);
+//   virtual ~UnfusedMHARunnerFp16();
 
-    virtual void setup(const int32_t S, const int32_t B) override;
+//   virtual void setup(const int32_t S, const int32_t B) override;
 
-    void run(const void* qkvPtr, const void* maskPtr, void* output, void* workspace, cudaStream_t stream) override;
+//   void run(const void* qkvPtr, const void* maskPtr, const void* seqLens,
+//            void* output, void* workspace, cudaStream_t stream) override;
 
-    size_t getWorkspaceSize() const override;
+//   size_t getWorkspaceSize() const override;
 
-    bool isValid(int32_t s) const override;
+//   bool isValid(int32_t s) const override;
 
-private:
-    bool mIsBestAlgoFound;
-    int32_t mAlgoBatchedEx1;
-    int32_t mAlgoBatchedEx2;
-    cublasHandle_t mCublas;
-    int32_t mSm;
-};
+//  private:
+//   bool mIsBestAlgoFound;
+//   int32_t mAlgoBatchedEx1;
+//   int32_t mAlgoBatchedEx2;
+//   cublasHandle_t mCublas;
+//   int32_t mSm;
+// };
 
-class UnfusedMHARunnerFp32 : public MHARunner
-{
-public:
-    UnfusedMHARunnerFp32(const int32_t numHeads, const int32_t headSize, const int32_t smVersion);
-    virtual ~UnfusedMHARunnerFp32();
+// class UnfusedMHARunnerFp32 : public MHARunner {
+//  public:
+//   UnfusedMHARunnerFp32(const int32_t numHeads, const int32_t headSize, const int32_t smVersion);
+//   virtual ~UnfusedMHARunnerFp32();
 
-    virtual void setup(const int32_t S, const int32_t B) override;
+//   virtual void setup(const int32_t S, const int32_t B) override;
 
-    void run(const void* qkvPtr, const void* maskPtr, void* output, void* workspace, cudaStream_t stream) override;
+//   void run(const void* qkvPtr, const void* maskPtr, const void* seqLens,
+//            void* output, void* workspace, cudaStream_t stream) override;
 
-    size_t getWorkspaceSize() const override;
+//   size_t getWorkspaceSize() const override;
 
-    bool isValid(int32_t s) const override;
+//   bool isValid(int32_t s) const override;
 
-private:
-    bool mIsBestAlgoFound;
-    int32_t mAlgoBatchedEx1;
-    int32_t mAlgoBatchedEx2;
-    cublasHandle_t mCublas;
-    int32_t mSm;
-};
+//  private:
+//   bool mIsBestAlgoFound;
+//   int32_t mAlgoBatchedEx1;
+//   int32_t mAlgoBatchedEx2;
+//   cublasHandle_t mCublas;
+//   int32_t mSm;
+// };
 
 }  // namespace cuda
 }  // namespace contrib

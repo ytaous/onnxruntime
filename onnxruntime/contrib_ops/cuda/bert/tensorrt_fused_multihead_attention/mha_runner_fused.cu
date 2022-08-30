@@ -144,7 +144,7 @@ public:
         params.o_stride_in_bytes = interface->mNumHeads * interface->mHeadSize * sizeof(half);
     }
 
-    void run(const void* qkvPtr, const void* maskPtr, void* output, void* workspace, cudaStream_t stream)
+    void run(const void* qkvPtr, const void* /*maskPtr*/, const void* seqLens, void* output, void* workspace, cudaStream_t stream)
     {
         params.qkv_ptr = const_cast<void*>(qkvPtr);
 
@@ -153,7 +153,7 @@ public:
 
         params.o_ptr = output;
 
-        params.cu_seqlens = static_cast<int*>(const_cast<void*>(maskPtr));
+        params.cu_seqlens = static_cast<int*>(const_cast<void*>(seqLens));
         xmmaKernel->run(params, stream);
         CUDA_CALL_THROW(cudaPeekAtLastError());
     }
@@ -196,8 +196,9 @@ bool FusedMHARunnerFP16v2::isValid(int s) const
     return pimpl->isValid(s);
 }
 
-void FusedMHARunnerFP16v2::run(const void* qkvPtr, const void* maskPtr, void* output, void* workspace, cudaStream_t stream){
-    return pimpl->run(qkvPtr, maskPtr, output, workspace, stream);
+void FusedMHARunnerFP16v2::run(const void* qkvPtr, const void* maskPtr, const void* seqLens,
+                               void* output, void* workspace, cudaStream_t stream) {
+  return pimpl->run(qkvPtr, maskPtr, seqLens, output, workspace, stream);
 }
 
 // Int8 starts here: TODO refactor the duplicate stuff
@@ -269,7 +270,8 @@ public:
         params.o_stride_in_bytes = interface->mNumHeads * interface->mHeadSize * sizeof(int8_t);
     }
 
-    void run(const void* qkvPtr, const void* maskPtr, void* output, void* /*workspace*/, cudaStream_t stream)
+    void run(const void* qkvPtr, const void* /*maskPtr*/ , const void* seqLens,
+        void* output, void* /*workspace*/, cudaStream_t stream)
     {
         float scaleQkv = interface->mScaleQkv;
         float scaleCtx = interface->mScaleCtx;
@@ -295,7 +297,7 @@ public:
 
         params.o_ptr = output;
 
-        params.cu_seqlens = static_cast<int*>(const_cast<void*>(maskPtr));
+        params.cu_seqlens = static_cast<int*>(const_cast<void*>(seqLens));
 
         xmmaKernel->run(params, stream);
         CUDA_CALL_THROW(cudaPeekAtLastError());
@@ -347,8 +349,9 @@ bool FusedMHARunnerInt8v2::isValid(int s) const
     return pimpl->isValid(s);
 }
 
-void FusedMHARunnerInt8v2::run(const void* qkvPtr, const void* maskPtr, void* output, void* workspace, cudaStream_t stream){
-    return pimpl->run(qkvPtr, maskPtr, output, workspace, stream);
+void FusedMHARunnerInt8v2::run(const void* qkvPtr, const void* maskPtr, const void* seqLens,
+                               void* output, void* workspace, cudaStream_t stream) {
+  return pimpl->run(qkvPtr, maskPtr, seqLens, output, workspace, stream);
 }
 #endif
 

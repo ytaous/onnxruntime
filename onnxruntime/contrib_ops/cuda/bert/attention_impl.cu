@@ -17,7 +17,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Modifications: scaling is moved from masked softmax to the gemm before that.
+// Modifications:
+// (1) support GPT-2 past state, unidirectional mask and 4D attention mask from Megatron
+// (2) support 2D attention mask
+// (3) allow persistent softmax from PyTorch for debugging purpose.
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
@@ -30,6 +33,7 @@ limitations under the License.
 #include "contrib_ops/cuda/bert/transformer_common.h"
 #include "contrib_ops/cuda/bert/add_bias_transpose.h"
 #include "contrib_ops/cuda/bert/tensorrt_fused_multihead_attention/mha_runner.h"
+#include "contrib_ops/cuda/transformers/dump_cuda_tensor.h"
 
 using namespace onnxruntime::cuda;
 using namespace cub;
@@ -70,12 +74,13 @@ size_t GetAttentionWorkspaceSize(
     void* mha_runner) {
   size_t q_size = element_size * batch_size * sequence_length * num_heads * head_size;
 
-  if (mha_runner != nullptr){
-    return  4 * q_size + reinterpret_cast<MHARunner*>(mha_runner)->getWorkspaceSize();
+  if (mha_runner != nullptr) {
+    size_t paddingOffsetBytes = sizeof(int) * (2 * batch_size + 1);
+    return 4 * q_size + reinterpret_cast<MHARunner*>(mha_runner)->getWorkspaceSize() + paddingOffsetBytes;
   }
 
   return 3 * q_size + 2 * GetAttentionScratchSize(element_size, batch_size, num_heads, sequence_length,
-                                                past_sequence_length + sequence_length);
+                                                  past_sequence_length + sequence_length);
 }
 
 template <typename T>
@@ -103,6 +108,10 @@ bool QkvToContext(
     MHARunner* mha_runner) {
   const int max_threads_per_block = prop.maxThreadsPerBlock;
 
+#ifdef DEBUG_GENERATION
+  transformers::CudaTensorConsoleDumper dumper;
+#endif
+
   // input should be BxSx3xNxH => qkv: 3xBxNxSxH
   T* qkv = workspace;
   if (bias == nullptr) {
@@ -111,7 +120,8 @@ bool QkvToContext(
       return false;
     }
   } else {
-    const int format = 1;  // BxSxMxNxH
+    // For fused TRT attention, the result in qkv has shape SxBxNx3xH
+    const int format = (nullptr == mha_runner ? 1 : 2);
     const bool enable_half4 = true;
     LaunchAddBiasTranspose(stream, 3, format, max_threads_per_block, batch_size,
                            sequence_length, num_heads, head_size,
@@ -120,24 +130,63 @@ bool QkvToContext(
     if (!CUDA_CALL(cudaPeekAtLastError())) {
       return false;
     }
+
+#ifdef DEBUG_GENERATION
+    if (format == 1) {
+      dumper.Print("qkv1", qkv, 3 * batch_size * num_heads, sequence_length, head_size);
+    } else {
+      dumper.Print("qkv2", qkv, sequence_length * batch_size * num_heads, 3, head_size);
+    }
+#endif
   }
 
-  // now qkv has Q, K, V: each has size BxNxSxH
+  // Q, K, V has size BxNxSxH
   const int batches = batch_size * num_heads;
   const int size_per_batch = sequence_length * head_size;
   const int total_size = batches * size_per_batch;
 
-  T* scratch1 = qkv + total_size;
+  T* scratch1 = qkv + 3 * total_size;
   T* temp_output = scratch1;
-  if (nullptr != mha_runner){
+  if (nullptr != mha_runner && bias != nullptr) {
+    int* padding_offset = reinterpret_cast<int*>(qkv + 4 * total_size);
+    LaunchTrtPaddingOffset(padding_offset, mask_index, batch_size, sequence_length, stream);
+
+#ifdef DEBUG_GENERATION
+    dumper.Print("padding_offset", padding_offset, 1, 2 * batch_size + 1);
+#endif
+
     FusedMHARunnerFP16v2* fused_runner = reinterpret_cast<FusedMHARunnerFP16v2*>(mha_runner);
-    fused_runner->setup(sequence_length, batch_size);
-    fused_runner->run(qkv, mask_index, temp_output, nullptr, stream);
-  }
-  else {
+    fused_runner->setup(sequence_length, 2 * batch_size);
+
+    // no need transpose when B or S is 1, so write to output directly.
+    if (batch_size == 1 || sequence_length == 1) {
+      fused_runner->run(qkv, nullptr, padding_offset, output, nullptr, stream);
+
+#ifdef DEBUG_GENERATION
+      dumper.Print("output", output, batch_size, sequence_length, num_heads * head_size);
+#endif
+      return true;
+    }
+
+    // qkv has shape SxBxNx3xH
+    fused_runner->run(qkv, nullptr, padding_offset, temp_output, nullptr, stream);
+
+#ifdef DEBUG_GENERATION
+    dumper.Print("temp_output", temp_output, sequence_length, batch_size, num_heads * head_size);
+#endif
+
+    // temp_output has shape SxBxNxH, transpose to output BxSxNxH
+    // TODO: support input/output shape SxBxNH, then we can remove this transpose.
+    bool result = LaunchTransTrt(stream, sequence_length, batch_size, head_size, num_heads,
+                                 max_threads_per_block, temp_output, output);
+#ifdef DEBUG_GENERATION
+    dumper.Print("output", output, batch_size, sequence_length, num_heads * head_size);
+#endif
+    return result;
+  } else {
     const int all_sequence_length = past_sequence_length + sequence_length;
     const size_t bytes = GetAttentionScratchSize(element_size, batch_size, num_heads,
-                                                sequence_length, all_sequence_length);
+                                                 sequence_length, all_sequence_length);
     T* scratch2 = scratch1 + (bytes / element_size);
 
     const T* q = qkv;
@@ -152,7 +201,7 @@ bool QkvToContext(
     const int present_size_per_batch = all_sequence_length * head_size;
     if (nullptr != present) {
       if (!LaunchConcatPastToPresent(stream, all_sequence_length, sequence_length, batch_size, head_size, num_heads,
-                                    max_threads_per_block, past, k, present)) {
+                                     max_threads_per_block, past, k, present)) {
         return false;
       }
 
@@ -200,12 +249,12 @@ bool QkvToContext(
       // mask_index has 1D shape: either (batch_size) or (2*batch_size). Only the later one has start postions.
       const int* mask_start = (mask_index_dims.at(0) > batch_size) ? mask_index + batch_size : nullptr;
       if (!ComputeSoftmaxWithMask1D<T>(stream, all_sequence_length, sequence_length, batch_size, num_heads,
-                                      mask_index, mask_start, extra_add_qk, scratch1, scratch2, is_unidirectional)) {
+                                       mask_index, mask_start, extra_add_qk, scratch1, scratch2, is_unidirectional)) {
         return false;
       }
     } else {  // no mask
       if (!ComputeSoftmax<T>(stream, all_sequence_length, sequence_length, batch_size, num_heads, extra_add_qk,
-                            scratch1, scratch2, is_unidirectional)) {
+                             scratch1, scratch2, is_unidirectional)) {
         return false;
       }
     }
@@ -220,11 +269,19 @@ bool QkvToContext(
             &zero, temp_output, head_size, size_per_batch, batches, prop))) {
       return false;
     }
-  }
 
-  // temp_output is BxNxSxH, transpose to output BxSxNxH
-  return LaunchTransCtx(stream, sequence_length, batch_size, head_size, num_heads,
-                        max_threads_per_block, false, temp_output, output);
+#ifdef DEBUG_GENERATION
+    dumper.Print("temp_output", temp_output, batch_size * num_heads, sequence_length, head_size);
+#endif
+
+    // temp_output is BxNxSxH, transpose to output BxSxNxH
+    bool result = LaunchTransCtx(stream, sequence_length, batch_size, head_size, num_heads,
+                                 max_threads_per_block, false, temp_output, output);
+#ifdef DEBUG_GENERATION
+    dumper.Print("output", output, batch_size, sequence_length, num_heads * head_size);
+#endif
+    return result;
+  }
 }
 
 bool LaunchAttentionKernel(
