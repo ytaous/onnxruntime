@@ -38,6 +38,30 @@ class SkipLayerNormSmall : public IKernelExplorer {
   ParamsT params_{};
 };
 
+template <typename T, int ThreadsPerBlock, int VecSize>
+class SkipLayerNormLarge : public IKernelExplorer {
+ public:
+  SkipLayerNormLarge(DeviceArray& output, DeviceArray& input, DeviceArray& skip,
+                     DeviceArray& gamma, DeviceArray& beta, DeviceArray& bias,
+                     float epsilon, int hidden_size, int element_count)
+      : params_(this->Stream(), static_cast<T*>(output.ptr()), static_cast<T*>(input.ptr()),
+                static_cast<T*>(skip.ptr()), static_cast<T*>(gamma.ptr()), static_cast<T*>(beta.ptr()),
+                static_cast<T*>(bias.ptr()), epsilon, hidden_size, element_count) {}
+
+  void Run() override {
+    ORT_THROW_IF_ERROR((contrib::rocm::SkipLayerNormLargeOp<T, ThreadsPerBlock, VecSize>(&params_)));
+  }
+
+  bool IsSupported() {
+    Status status = contrib::rocm::SkipLayerNormLargeOp<T, ThreadsPerBlock, VecSize>(&params_);
+    return status.IsOK();
+  }
+
+ private:
+  using ParamsT = contrib::rocm::SkipLayerNormParams<T>;
+  ParamsT params_{};
+};
+
 template <typename T>
 class SkipLayerNormTunable : public IKernelExplorer {
  public:
@@ -103,6 +127,8 @@ class SkipLayerNormTunable : public IKernelExplorer {
 void InitSkipLayerNorm(py::module m) {
   REGISTER_OP_FOR_ALL_THREADS_PER_BLOCK_ALL_VEC_SIZE(SkipLayerNormSmall, half);
   REGISTER_OP_FOR_ALL_THREADS_PER_BLOCK_ALL_VEC_SIZE(SkipLayerNormSmall, float);
+  REGISTER_OP_FOR_ALL_THREADS_PER_BLOCK_ALL_VEC_SIZE(SkipLayerNormLarge, half);
+  REGISTER_OP_FOR_ALL_THREADS_PER_BLOCK_ALL_VEC_SIZE(SkipLayerNormLarge, float);
 
   REGISTER_TUNABLE_OP(half);
   REGISTER_TUNABLE_OP(float);
