@@ -3,6 +3,8 @@
 # Licensed under the MIT License.
 # --------------------------------------------------------------------------
 
+import re
+
 import kernel_explorer as ke
 import numpy as np
 import pytest
@@ -22,8 +24,8 @@ def get_bert_sizes():
 
 def dtype_to_funcs(dtype):
     type_map = {
-        "float16": list(filter(lambda x: "SkipLayerNormSmall_half" in x, dir(ke))),
-        "float32": list(filter(lambda x: "SkipLayerNormSmall_float" in x, dir(ke))),
+        "float16": list(filter(lambda x: re.search("SkipLayerNorm.*_half", x), dir(ke))),
+        "float32": list(filter(lambda x: re.search("SkipLayerNorm.*_float", x), dir(ke))),
     }
     return type_map[dtype]
 
