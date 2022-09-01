@@ -21,8 +21,8 @@ struct SkipLayerNormParams : OpParams {
                       const T* skip, const T* gamma, const T* beta,
                       const T* bias, float epsilon, const int ld,
                       const int element_count)
-      : OpParams(stream), output(output), input(input), skip(skip), gamma(gamma), beta(beta),
-        bias(bias), epsilon(epsilon), ld(ld), element_count(element_count) {}
+      : OpParams(stream), output(output), input(input), skip(skip), gamma(gamma), beta(beta), bias(bias),
+        epsilon(epsilon), ld(ld), element_count(element_count) {}
 
   std::string Signature() const override {
     std::string sig = std::to_string(ld) + "_" + std::to_string(element_count);
@@ -56,7 +56,7 @@ Status SkipLayerNormSmallOp(const SkipLayerNormParams<T>* params) {
 }
 
 template <typename T, int ThreadsPerBlock, int VecSize>
-Status SkipLayerNormLargeOp(const SkipLayerNormParams<T>* params) {
+Status SkipLayerNormRegularOp(const SkipLayerNormParams<T>* params) {
   TUNABLE_OP_RETURN_UNSUPPOTED_ARGUMENT_IF(
       !((params->ld > 0 && params->ld % VecSize == 0 && params->ld >= ThreadsPerBlock * VecSize)));
   hipLaunchKernelGGL((SkipLayerNormKernelVec<T, ThreadsPerBlock, VecSize>),
@@ -91,7 +91,7 @@ class SkipLayerNormTunableOp : public TunableOp<SkipLayerNormParams<T>> {
  public:
   SkipLayerNormTunableOp() {
     ADD_OP_FOR_ALL_THREADS_PER_BLOCK_ALL_VEC_SIZE(SkipLayerNormSmallOp)
-    ADD_OP_FOR_ALL_THREADS_PER_BLOCK_ALL_VEC_SIZE(SkipLayerNormLargeOp)
+    ADD_OP_FOR_ALL_THREADS_PER_BLOCK_ALL_VEC_SIZE(SkipLayerNormRegularOp)
 
     // NOTE: the 3-th kernel seems to be better in gerenal case, so set it as default one
     this->SetDefaultId(3);
