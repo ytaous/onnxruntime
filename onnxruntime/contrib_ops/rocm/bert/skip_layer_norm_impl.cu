@@ -115,12 +115,12 @@ Status LaunchSkipLayerNormKernel(
 
 template Status LaunchSkipLayerNormKernel<float>(hipStream_t stream, float* output, const float* input,
                                                  const float* skip, const float* gamma, const float* beta,
-                                                 const float* bias, float epsilon, const int ld,
+                                                 const float* bias, const float epsilon, const int ld,
                                                  const int element_count);
 
 template Status LaunchSkipLayerNormKernel<half>(hipStream_t stream, half* output, const half* input,
                                                 const half* skip, const half* gamma, const half* beta,
-                                                const half* bias, float epsilon, const int ld,
+                                                const half* bias, const float epsilon, const int ld,
                                                 const int element_count);
 
 }  // namespace rocm
