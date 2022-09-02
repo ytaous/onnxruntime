@@ -369,7 +369,7 @@ jobs:
         python tools/ci_build/build.py \
           --update \
           --build_dir ./build \
-          --config RelWithDebInfo \
+          --config Release \
           --cmake_generator Ninja \
           --cmake_extra_defines \
               CMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang \
@@ -385,8 +385,8 @@ jobs:
           --rocm_home=/opt/rocm \
           --nccl_home=/opt/rocm \
           --build_wheel
-        cmake --build ./build/RelWithDebInfo --target kernel_explorer
-        export KERNEL_EXPLORER_BUILD_DIR=./build/RelWithDebInfo
+        cmake --build ./build/Release --target kernel_explorer
+        export KERNEL_EXPLORER_BUILD_DIR=./build/Release
         pytest ./onnxruntime/python/tools/kernel_explorer/
     displayName: 'Test kernel explorer'
     condition: succeededOrFailed()
