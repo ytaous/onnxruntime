@@ -361,3 +361,31 @@ jobs:
   #         --transformers_cache /hf_models_cache/huggingface/transformers
   #   displayName: 'Run orttraining_ortmodule_tests.py'
   #   condition: succeededOrFailed()
+
+
+  - task: CmdLine@2
+    inputs:
+      script: |-
+        python tools/ci_build/build.py \
+          --update \
+          --build_dir ./build \
+          --config RelWithDebInfo \
+          --cmake_generator Ninja \
+          --cmake_extra_defines \
+              CMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang \
+              CMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ \
+              CMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              onnxruntime_BUILD_KERNEL_EXPLORER=ON \
+              onnxruntime_DISABLE_CONTRIB_OPS=ON \
+              onnxruntime_DISABLE_ML_OPS=ON \
+              onnxruntime_DEV_MODE=OFF \
+          --skip_submodule_sync \
+          --skip_tests \
+          --use_rocm \
+          --rocm_home=/opt/rocm \
+          --nccl_home=/opt/rocm \
+          --build_wheel
+        cmake --build ./build/RelWithDebInfo --target kernel_explorer
+        pytest ./onnxruntime/python/tools/kernel_explorer/
+    displayName: 'Build kernel expolrer'
+    condition: succeededOrFailed()
