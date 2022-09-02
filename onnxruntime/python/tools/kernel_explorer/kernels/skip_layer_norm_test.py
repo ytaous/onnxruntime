@@ -11,9 +11,9 @@ import pytest
 
 
 def get_bert_sizes():
-    batch_sizes = [1, 8, 64, 128]
+    batch_sizes = [1, 8]
     seq_lens = [384]
-    hidden_sizes = [128, 256, 384, 1024]
+    hidden_sizes = [128, 256, 384, 1024, 2048]
     bert_sizes = []
     for bsz in batch_sizes:
         for sql in seq_lens:
