@@ -1,40 +1,7 @@
 {
   "configurations": [
     {
-      "name": "WinML-Debug",
-      "generator": "Ninja",
-      "configurationType": "Debug",
-      "inheritEnvironments": [ "msvc_x64_x64" ],
-      "buildRoot": "${projectDir}\\..\\build\\${name}",
-      "installRoot": "${projectDir}\\..\\build\\${name}\\install",
-      "cmakeCommandArgs": "",
-      "buildCommandArgs": "",
-      "ctestCommandArgs": "",
-      "variables": [
-        {
-          "name": "onnxruntime_USE_WINML",
-          "value": "True",
-          "type": "BOOL"
-        },
-        {
-          "name": "onnxruntime_WINML_NAMESPACE_OVERRIDE",
-          "value": "Microsoft"
-        },
-        {
-          "name": "onnxruntime_USE_DML",
-          "value": "True",
-          "type": "BOOL"
-        },
-        {
-          "name": "onnxruntime_BUILD_SHARED_LIB",
-          "value": "True",
-          "type": "BOOL"
-        }
-      ],
-      "cmakeToolchain": "${projectDir}\\wcos_toolchain.cmake"
-    },
-    {
-      "name": "WinML-RelWithDebInfo",
+      "name": "RelWithDebInfo",
       "generator": "Ninja",
       "configurationType": "RelWithDebInfo",
       "inheritEnvironments": [ "msvc_x64_x64" ],
@@ -45,26 +12,41 @@
       "ctestCommandArgs": "",
       "variables": [
         {
-          "name": "onnxruntime_USE_WINML",
+          "name": "onnxruntime_USE_CUDA",
           "value": "True",
           "type": "BOOL"
         },
         {
-          "name": "onnxruntime_WINML_NAMESPACE_OVERRIDE",
-          "value": "Microsoft"
-        },
-        {
-          "name": "onnxruntime_USE_DML",
+          "name": "onnxruntime_USE_TENSORRT",
           "value": "True",
           "type": "BOOL"
+        },
+        {
+          "name": "onnxruntime_USE_TENSORRT_BUILTIN_PARSER",
+          "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "onnxruntime_CUDA_HOME",
+          "value": "'C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.6",
+          "type": "STRING"
+        },
+        {
+          "name": "onnxruntime_CUDNN_HOME",
+          "value": "'C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.6/lib",
+          "type": "STRING"
+        },
+        {
+          "name": "onnxruntime_TENSORRT_HOME",
+          "value": "C:/TensorRT-8.4.1.5",
+          "type": "STRING"
         },
         {
           "name": "onnxruntime_BUILD_SHARED_LIB",
           "value": "True",
           "type": "BOOL"
         }
-      ],
-      "cmakeToolchain": "${projectDir}\\wcos_toolchain.cmake"
+      ]
     }
   ]
 }

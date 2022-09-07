@@ -8,6 +8,8 @@
 #include "core/framework/kernel_registry_manager.h"
 #include "core/framework/murmurhash3.h"
 #include "core/framework/op_kernel.h"
+#include "core/providers/cuda/cuda_pch.h"
+#include <NvInfer.h>
 
 namespace onnxruntime {
 
@@ -144,37 +146,69 @@ int IExecutionProvider::ModelMetadefIdGenerator::GenerateId(const onnxruntime::G
   } else {
     uint32_t hash[4] = {0, 0, 0, 0};
 
-    // prefer path the model was loaded from
-    // this may not be available if the model was loaded from a stream or in-memory bytes
-    const auto& model_path_str = main_graph.ModelPath().ToPathString();
-    if (!model_path_str.empty()) {
-      MurmurHash3::x86_128(model_path_str.data(), gsl::narrow_cast<int32_t>(model_path_str.size()), hash[0], &hash);
-    } else {
-      auto hash_str = [&hash](const std::string& str) {
-        MurmurHash3::x86_128(str.data(), gsl::narrow_cast<int32_t>(str.size()), hash[0], &hash);
-      };
-
-      // fingerprint the main graph by hashing graph inputs and the ordered outputs from each node
-      for (const auto* node_arg : main_graph.GetInputsIncludingInitializers()) {
-        hash_str(node_arg->Name());
-      }
-
-      // note: process nodes in order defined in model to be deterministic
-      for (const auto& node : main_graph.Nodes()) {
-        for (const auto* node_arg : node.OutputDefs()) {
-          if (node_arg->Exists()) {
-            hash_str(node_arg->Name());
-          }
-        }
-      }
+    // Use model name instead of path to avoid cache regeneration if path changes
+    // Question: Could model be created without model name?
+    const auto& model_name_str = main_graph.Name();
+    if (!model_name_str.empty()) {
+      MurmurHash3::x86_128(model_name_str.data(), gsl::narrow_cast<int32_t>(model_name_str.size()), hash[0], &hash);
     }
+    std::cout << "Model Name: " << model_name_str.data() << std::endl;
+    
+    auto hash_str = [&hash](const std::string& str) {
+      MurmurHash3::x86_128(str.data(), gsl::narrow_cast<int32_t>(str.size()), hash[0], &hash);
+      std::cout << str.data() << "->";
+    };
+    
+    std::cout << "Hashing graph inputs and the ordered outputs from each node: " << std::endl;
+
+    // fingerprint the main graph by hashing graph inputs and the ordered outputs from each node
+    for (const auto* node_arg : main_graph.GetInputsIncludingInitializers()) {
+      hash_str(node_arg->Name());
+    }
+    std::cout << std::endl;
+    
+    // note: process nodes in order defined in model to be deterministic
+    for (const auto& node : main_graph.Nodes()) {
+      for (const auto* node_arg : node.OutputDefs()) {
+        if (node_arg->Exists()) {
+          hash_str(node_arg->Name());
+        }
+       }
+    }
+    std::cout << std::endl; 
+
+#ifdef __linux__
+    hash_str("LINUX");
+    std::cout << "Linux Platform" << std::endl;
+#elif defined(_WIN32)
+    hash_str("WINDOWS");
+    std::cout << "Windows Platform" << std::endl;
+#endif
+
+#ifdef ORT_VERSION
+    hash_str(ORT_VERSION);
+    std::cout << "ORT " << ORT_VERSION << std::endl;
+#endif
+
+#ifdef CUDA_VERSION
+    hash_str(std::to_string(CUDA_VERSION));
+    std::cout << "CUDA " << CUDA_VERSION << std::endl;
+#endif
+
+#if defined(NV_TENSORRT_MAJOR) && defined(NV_TENSORRT_MINOR)
+    std::string TRT_VERSION = std::to_string(NV_TENSORRT_MAJOR) + "." + std::to_string(NV_TENSORRT_MINOR);
+    hash_str(TRT_VERSION);
+    std::cout << "TRT " << TRT_VERSION << std::endl;
+#endif
 
     model_hash = hash[0] | (uint64_t(hash[1]) << 32);
 
     main_graph_hash_[graph_instance_hash] = model_hash;
+    std::cout << "hash: " << model_hash << std::endl;
   }
 
   // return the current unique id, and increment to update
+  std::cout << "Current id: " << model_metadef_id_[model_hash]<< std::endl;
   return model_metadef_id_[model_hash]++;
 }
 

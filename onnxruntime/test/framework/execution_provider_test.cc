@@ -86,8 +86,8 @@ TEST(ExecutionProviderTest, MetadefIdGeneratorUsingModelHashing) {
 
   HashValue model_hash2;
   int id2 = ep.GetId(viewer2, model_hash2);
-  ASSERT_EQ(id2, 0) << "Id for new model should always start at zero";
-  ASSERT_NE(model_hash, model_hash2) << "Hash from model path should differ from hash based on model contents";
+  ASSERT_EQ(id2, 1) << "id2 should be 1 as model and model2 have same model name and content";
+  ASSERT_EQ(model_hash, model_hash2) << "Hash should stay the same if a model is loaded in different methods";
 }
 
 }  // namespace test
