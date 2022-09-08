@@ -57,7 +57,7 @@ class GpuDataManagerImpl implements GpuDataManager {
   // GPU Data ID => GPU Data ( read buffer )
   downloadCache: Map<GpuDataId, DownloadCacheValue>;
 
-  constructor(private device: GPUDevice) {
+  constructor(private device: GPUDevice /* , private reuseBuffer: boolean */) {
     this.storageCache = new Map();
     this.downloadCache = new Map();
   }
@@ -162,4 +162,5 @@ class GpuDataManagerImpl implements GpuDataManager {
   }
 }
 
-export const createGpuDataManager = (device: GPUDevice): GpuDataManager => new GpuDataManagerImpl(device);
+export const createGpuDataManager = (...args: ConstructorParameters<typeof GpuDataManagerImpl>): GpuDataManager =>
+    new GpuDataManagerImpl(...args);
