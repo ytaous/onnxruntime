@@ -59,14 +59,13 @@ def main():
 
     use_container_registry = args.container_registry is not None
 
-    if not use_container_registry:
+    if use_container_registry:
+        ort_version = (Path(REPO_DIR) / "VERSION_NUMBER").read_text().strip().split(".")
+        full_image_name = (
+        "{}{}{}.azurecr.io/{}:latest".format(args.container_registry, ort_version[0], ort_version[1], args.repository)
+    else:
         log.info("No container registry will be used")
-
-    full_image_name = (
-        "{}.azurecr.io/{}:latest".format(args.container_registry, args.repository)
-        if use_container_registry
-        else "{}:latest".format(args.repository)
-    )
+        full_image_name = "{}:latest".format(args.repository)
 
     log.info("Image: {}".format(full_image_name))
 
