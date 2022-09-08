@@ -61,8 +61,9 @@ def main():
 
     if use_container_registry:
         ort_version = (Path(REPO_DIR) / "VERSION_NUMBER").read_text().strip().split(".")
-        full_image_name = (
-        "{}{}{}.azurecr.io/{}:latest".format(args.container_registry, ort_version[0], ort_version[1], args.repository)
+        full_image_name = "{}{}{}.azurecr.io/{}:latest".format(
+            args.container_registry, ort_version[0], ort_version[1], args.repository
+        )
     else:
         log.info("No container registry will be used")
         full_image_name = "{}:latest".format(args.repository)
