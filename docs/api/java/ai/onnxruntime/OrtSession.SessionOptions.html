@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":10,"i14":10,"i15":10,"i16":10,"i17":10,"i18":10,"i19":10,"i20":10,"i21":10,"i22":10,"i23":10,"i24":10,"i25":10,"i26":10,"i27":10,"i28":10,"i29":10,"i30":10,"i31":10,"i32":10,"i33":10,"i34":10,"i35":10,"i36":10};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":10,"i14":10,"i15":10,"i16":10,"i17":10,"i18":10,"i19":10,"i20":10,"i21":10,"i22":10,"i23":10,"i24":10,"i25":10,"i26":10,"i27":10,"i28":10,"i29":10,"i30":10,"i31":10,"i32":10,"i33":10,"i34":10,"i35":10,"i36":10,"i37":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -369,61 +369,68 @@ implements java.lang.AutoCloseable</pre>
 </tr>
 <tr id="i20" class="altColor">
 <td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#addXnnpack(java.util.Map)">addXnnpack</a></span>&#8203;(java.util.Map&lt;java.lang.String,&#8203;java.lang.String&gt;&nbsp;providerOptions)</code></th>
+<td class="colLast">
+<div class="block">Adds Xnnpack as an execution backend.</div>
+</td>
+</tr>
+<tr id="i21" class="rowColor">
+<td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#close()">close</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Closes the session options, releasing any memory acquired.</div>
 </td>
 </tr>
-<tr id="i21" class="rowColor">
+<tr id="i22" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#disablePerSessionThreads()">disablePerSessionThreads</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Disables the per session thread pools.</div>
 </td>
 </tr>
-<tr id="i22" class="altColor">
+<tr id="i23" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#disableProfiling()">disableProfiling</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Disables profiling in sessions using this SessionOptions.</div>
 </td>
 </tr>
-<tr id="i23" class="rowColor">
+<tr id="i24" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#enableProfiling(java.lang.String)">enableProfiling</a></span>&#8203;(java.lang.String&nbsp;filePath)</code></th>
 <td class="colLast">
 <div class="block">Enables profiling in sessions using this SessionOptions.</div>
 </td>
 </tr>
-<tr id="i24" class="altColor">
+<tr id="i25" class="rowColor">
 <td class="colFirst"><code>java.util.Map&lt;java.lang.String,&#8203;java.lang.String&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getConfigEntries()">getConfigEntries</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns an unmodifiable view of the map contains all session configuration entries.</div>
 </td>
 </tr>
-<tr id="i25" class="rowColor">
+<tr id="i26" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#registerCustomOpLibrary(java.lang.String)">registerCustomOpLibrary</a></span>&#8203;(java.lang.String&nbsp;path)</code></th>
 <td class="colLast">
 <div class="block">Registers a library of custom ops for use with <a href="OrtSession.html" title="class in ai.onnxruntime"><code>OrtSession</code></a>s using this SessionOptions.</div>
 </td>
 </tr>
-<tr id="i26" class="altColor">
+<tr id="i27" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setCPUArenaAllocator(boolean)">setCPUArenaAllocator</a></span>&#8203;(boolean&nbsp;useArena)</code></th>
 <td class="colLast">
 <div class="block">Sets the CPU to use an arena memory allocator.</div>
 </td>
 </tr>
-<tr id="i27" class="rowColor">
+<tr id="i28" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setExecutionMode(ai.onnxruntime.OrtSession.SessionOptions.ExecutionMode)">setExecutionMode</a></span>&#8203;(<a href="OrtSession.SessionOptions.ExecutionMode.html" title="enum in ai.onnxruntime">OrtSession.SessionOptions.ExecutionMode</a>&nbsp;mode)</code></th>
 <td class="colLast">
 <div class="block">Sets the execution mode of this options object, overriding the old setting.</div>
 </td>
 </tr>
-<tr id="i28" class="altColor">
+<tr id="i29" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setInterOpNumThreads(int)">setInterOpNumThreads</a></span>&#8203;(int&nbsp;numThreads)</code></th>
 <td class="colLast">
@@ -431,7 +438,7 @@ implements java.lang.AutoCloseable</pre>
  executing on a CPU.</div>
 </td>
 </tr>
-<tr id="i29" class="rowColor">
+<tr id="i30" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setIntraOpNumThreads(int)">setIntraOpNumThreads</a></span>&#8203;(int&nbsp;numThreads)</code></th>
 <td class="colLast">
@@ -439,49 +446,49 @@ implements java.lang.AutoCloseable</pre>
  CPU.</div>
 </td>
 </tr>
-<tr id="i30" class="altColor">
+<tr id="i31" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setLoggerId(java.lang.String)">setLoggerId</a></span>&#8203;(java.lang.String&nbsp;loggerId)</code></th>
 <td class="colLast">
 <div class="block">Sets the logger id to use.</div>
 </td>
 </tr>
-<tr id="i31" class="rowColor">
+<tr id="i32" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setMemoryPatternOptimization(boolean)">setMemoryPatternOptimization</a></span>&#8203;(boolean&nbsp;memoryPatternOptimization)</code></th>
 <td class="colLast">
 <div class="block">Turns on memory pattern optimizations, where memory is preallocated if all shapes are known.</div>
 </td>
 </tr>
-<tr id="i32" class="altColor">
+<tr id="i33" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setOptimizationLevel(ai.onnxruntime.OrtSession.SessionOptions.OptLevel)">setOptimizationLevel</a></span>&#8203;(<a href="OrtSession.SessionOptions.OptLevel.html" title="enum in ai.onnxruntime">OrtSession.SessionOptions.OptLevel</a>&nbsp;level)</code></th>
 <td class="colLast">
 <div class="block">Sets the optimization level of this options object, overriding the old setting.</div>
 </td>
 </tr>
-<tr id="i33" class="rowColor">
+<tr id="i34" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setOptimizedModelFilePath(java.lang.String)">setOptimizedModelFilePath</a></span>&#8203;(java.lang.String&nbsp;outputPath)</code></th>
 <td class="colLast">
 <div class="block">Sets the output path for the optimized model.</div>
 </td>
 </tr>
-<tr id="i34" class="altColor">
+<tr id="i35" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setSessionLogLevel(ai.onnxruntime.OrtLoggingLevel)">setSessionLogLevel</a></span>&#8203;(<a href="OrtLoggingLevel.html" title="enum in ai.onnxruntime">OrtLoggingLevel</a>&nbsp;logLevel)</code></th>
 <td class="colLast">
 <div class="block">Sets the Session's logging level.</div>
 </td>
 </tr>
-<tr id="i35" class="rowColor">
+<tr id="i36" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setSessionLogVerbosityLevel(int)">setSessionLogVerbosityLevel</a></span>&#8203;(int&nbsp;logLevel)</code></th>
 <td class="colLast">
 <div class="block">Sets the Session's logging verbosity level.</div>
 </td>
 </tr>
-<tr id="i36" class="altColor">
+<tr id="i37" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setSymbolicDimensionValue(java.lang.String,long)">setSymbolicDimensionValue</a></span>&#8203;(java.lang.String&nbsp;dimensionName,
                          long&nbsp;dimensionValue)</code></th>
@@ -1143,7 +1150,7 @@ implements java.lang.AutoCloseable</pre>
 <a id="addCoreML(java.util.EnumSet)">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>addCoreML</h4>
 <pre class="methodSignature">public&nbsp;void&nbsp;addCoreML&#8203;(java.util.EnumSet&lt;<a href="providers/CoreMLFlags.html" title="enum in ai.onnxruntime.providers">CoreMLFlags</a>&gt;&nbsp;flags)
@@ -1152,6 +1159,24 @@ implements java.lang.AutoCloseable</pre>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>flags</code> - The flags which control the CoreML configuration.</dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code><a href="OrtException.html" title="class in ai.onnxruntime">OrtException</a></code> - If there was an error in native code.</dd>
+</dl>
+</li>
+</ul>
+<a id="addXnnpack(java.util.Map)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>addXnnpack</h4>
+<pre class="methodSignature">public&nbsp;void&nbsp;addXnnpack&#8203;(java.util.Map&lt;java.lang.String,&#8203;java.lang.String&gt;&nbsp;providerOptions)
+                throws <a href="OrtException.html" title="class in ai.onnxruntime">OrtException</a></pre>
+<div class="block">Adds Xnnpack as an execution backend. Needs to list all options here if a new option
+ supported. current supported options: {}</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>providerOptions</code> - options pass to XNNPACK EP for initialization.</dd>
 <dt><span class="throwsLabel">Throws:</span></dt>
 <dd><code><a href="OrtException.html" title="class in ai.onnxruntime">OrtException</a></code> - If there was an error in native code.</dd>
 </dl>
